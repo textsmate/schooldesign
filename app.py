@@ -11,11 +11,12 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///data.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 login_manager.init_app(app)
+prefix = ''
 @app.route('/')
 def index():
     return 'design for school'
 
-@app.route('/signup',methods=['POST'])
+@app.route(f'{prefix}/signup',methods=['POST'])
 def register():
     name = request.form['name']
     password = request.form['password']
@@ -27,7 +28,7 @@ def register():
     }
     return jsonify(msg)
 
-@app.route('/signin',methods=['POST'])
+@app.route(f'{prefix}/signin',methods=['POST'])
 def signin():
     name = request.form['name']
     password = request.form['password']
@@ -40,7 +41,7 @@ def signin():
             msg['code'] = 1
     return jsonify(msg)   
 
-@app.route('/seller/signup',methods=['GET', 'POST'])
+@app.route(f'{prefix}/seller/signup',methods=['GET', 'POST'])
 def ssignup():
     if request.method == 'POST':
         name = request.form['name']
@@ -55,7 +56,7 @@ def ssignup():
         # return redirect('/seller/signin')
     return render_template('signup.html')
 
-@app.route('/seller/signin',methods=['GET', 'POST'])
+@app.route(f'{prefix}/seller/signin',methods=['GET', 'POST'])
 def ssignin():
     if request.method == 'POST':
         name = request.form['name']
@@ -69,7 +70,7 @@ def ssignin():
         # return redirect('/seller/signin')
     return render_template('signin.html')
 
-@app.route('/seller/items/add', methods=['GET', 'POST'])
+@app.route(f'{prefix}/seller/items/add', methods=['GET', 'POST'])
 def itemsadd():
     if request.method == 'POST':
         name = request.form['name']
@@ -83,11 +84,43 @@ def itemsadd():
         return redirect('/seller/items')
     return render_template('itemsadd.html')
 
-@app.route('/seller/items')
-def items():
-    return 'test'
+@app.route(f'{prefix}/sellers')
+def sellers():
+    ss = Seller.query.all()
+    seller = []
+    for s in ss:
+        serial = {
+            "id":s.id,
+            "avatar":s.avatar,
+            "name":s.name,
+        }
+        seller.append(serial)
+    return jsonify(seller)
 
-@app.route('/users')
+@app.route(f'{prefix}/seller/<int:id>/items')
+def items(id):
+    its = Item.query.filter(Item.seller_id==id).all()
+    itemss = []
+    for it in its:
+        serial = {
+            "id":it.id,
+            "image":it.image,
+            "name":it.name
+        }
+        itemss.append(serial)
+    return jsonify(itemss)
+
+@app.route(f'{prefix}/item/<int:id>')
+def item(id):
+    it = Item.query.filter(Item.id==id).first()
+    serial = {
+        "id":it.id,
+        "image":it.image,
+        "name":it.name,
+        "desc":it.desc
+    }
+    return jsonify(serial)
+@app.route(f'{prefix}/users')
 def users():
     u = User.query.all()
     return jsonify(u)
