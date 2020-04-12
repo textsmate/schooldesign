@@ -1,8 +1,9 @@
 from flask import Flask, request, jsonify, render_template, redirect
 from exts import db, login_manager
-from models import User, Seller, Item
+from models import User, Seller, Item, Comment, Shoplist
 from flask_login import login_user, current_user
 import os
+import json
 basedir = os.path.abspath(os.path.dirname(__file__))+r'\static\uploads\\'
 
 app = Flask(__name__)
@@ -34,7 +35,8 @@ def signin():
     password = request.form['password']
     u = User.query.filter(User.name==name).first()
     msg = {
-        "code":0
+        "code":0,
+        "userid":u.id
     }
     if u:
         if u.password == password:
@@ -74,14 +76,14 @@ def ssignin():
 def itemsadd():
     if request.method == 'POST':
         name = request.form['name']
-        desc = request.form['desc']
+        price = int(request.form['price'])
         image = request.files['image']
         fname = image.filename
         image.save(os.path.join(basedir+r'item\\'+fname))
-        i = Item(name=name, desc=desc, image=fname, seller=current_user)
+        i = Item(name=name, price=price, image=fname, seller=current_user)
         db.session.add(i)
         db.session.commit()
-        return redirect('/seller/items')
+        return redirect(f'{prefix}/seller/items')
     return render_template('itemsadd.html')
 
 @app.route(f'{prefix}/sellers')
@@ -120,6 +122,42 @@ def item(id):
         "desc":it.desc
     }
     return jsonify(serial)
+
+@app.route(f'{prefix}/item/<int:id>/comment', methods=['POST'])
+def comment(id):
+    if request.method == 'POST':
+        content = request.form['content']
+        user_id = int(request.form['uid'])
+        c = Comment(content=content, user_id=user_id, item_id=id)
+        db.session.add(c)
+        db.session.commit()
+        return jsonify({
+            "code":1
+        })
+
+@app.route(f'{prefix}/item/<int:id>/comments')
+def get_comment(id):
+    cs = Comment.query.filter(Comment.item_id == id)
+    comments = []
+    for c in cs:
+        serial = {
+            "id":c.id,
+            "name":c.user.name,
+            "content":c.content
+        }
+        comments.append(serial)
+    return jsonify(comments)
+
+@app.route(f'{prefix}/buy', methods=['POST'])
+def buy():
+    if request.method == 'POST':
+        data = json.loads(request.get_data(as_text=True))
+        for d in data:
+            shop = Shoplist(user_id=d['userid'], item_id=d['itemid'])
+            db.session.add(shop)
+            db.session.commit()
+        return jsonify({"code":1})
+
 @app.route(f'{prefix}/users')
 def users():
     u = User.query.all()
