@@ -13,6 +13,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 login_manager.init_app(app)
 prefix = ''
+
 @app.route('/')
 def index():
     return 'design for school'
@@ -21,12 +22,16 @@ def index():
 def register():
     name = request.form['name']
     password = request.form['password']
-    u = User(name=name, password=password)
-    db.session.add(u)
-    db.session.commit()
+    ad = request.form['address']
+    ph = int(request.form['phone'])    
+    u = User(name=name, password=password, address=ad, phone=ph)
     msg = {
-        "code":1
+        "code":0,
     }
+    if not User.query.filter(User.name==name).first():
+        msg['code'] = 1
+        db.session.add(u)
+        db.session.commit()
     return jsonify(msg)
 
 @app.route(f'{prefix}/signin',methods=['POST'])
@@ -119,7 +124,7 @@ def item(id):
         "id":it.id,
         "image":it.image,
         "name":it.name,
-        "desc":it.desc
+        "price":it.price
     }
     return jsonify(serial)
 
@@ -157,6 +162,24 @@ def buy():
             db.session.add(shop)
             db.session.commit()
         return jsonify({"code":1})
+
+@app.route(f'{prefix}/lists/<int:id>')
+def lists(id):
+    u = User.query.filter(User.id==id).first()
+    shoplists = Shoplist.query.filter(Shoplist.user_id==u.id)
+    items = []
+    for s in shoplists:
+        item = s.item
+        items.append(item)
+    itemss = []
+    for it in items:
+        serial = {
+            "id":it.id,
+            "image":it.image,
+            "name":it.name
+        }
+        itemss.append(serial)
+    return jsonify(itemss)
 
 @app.route(f'{prefix}/users')
 def users():
