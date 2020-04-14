@@ -59,7 +59,7 @@ def ssignup():
         u = Seller(name=name, password=password, avatar=avatar)
         db.session.add(u)
         db.session.commit()
-        return jsonify({"code":1})
+        return redirect(f'{prefix}/seller/signin')
         # return redirect('/seller/signin')
     return render_template('signup.html')
 
@@ -72,7 +72,7 @@ def ssignin():
         if s.password==password:
             login_user(s)
             # return jsonify({"code":1})
-            return redirect('/seller/items/add')
+            return redirect(f'{prefix}/seller/items/add')
         # return jsonify({"code":0})
         # return redirect('/seller/signin')
     return render_template('signin.html')
@@ -88,7 +88,7 @@ def itemsadd():
         i = Item(name=name, price=price, image=fname, seller=current_user)
         db.session.add(i)
         db.session.commit()
-        return redirect(f'{prefix}/seller/items')
+        return render_template('itemsadd.html')
     return render_template('itemsadd.html')
 
 @app.route(f'{prefix}/sellers')
